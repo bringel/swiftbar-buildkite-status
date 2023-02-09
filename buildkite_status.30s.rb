@@ -7,7 +7,7 @@
 # <bitbar.author.github>bringel</bitbar.author.github>
 # <bitbar.desc>Show the status of your most recent BuildKite builds</bitbar.desc>
 # <bitbar.dependencies>ruby</bitbar.dependencies>
-# <swiftbar.environment>[ORG_NAME=default_org, API_TOKEN=default_token, BRANCHES=develop;main, BUILD_COUNT=5]</swiftbar.environment>
+# <swiftbar.environment>[ORG_NAME=default_org, API_TOKEN=default_token, BRANCHES={ "nds": ["develop", "main"] }, BUILD_COUNT=5]</swiftbar.environment>
 
 require 'net/http'
 require 'json'
@@ -36,17 +36,18 @@ class BuildKiteService
     JSON.parse(res.body)
   end
 
-  def branch_builds(branch:)
+  def branch_builds(pipeline:, branch:)
     query = if branch.is_a?(Array)
               "branch[]=#{branch.join('&branch[]=')}"
             else
               "branch=#{branch}"
             end
 
+
     res = Net::HTTP.get_response(
       URI::HTTPS.build(
         host: @hostname,
-        path: "/v2/organizations/#{@org_name}/builds/",
+        path: "/v2/organizations/#{@org_name}/pipelines/#{pipeline}/builds",
         query: query
       ),
       request_headers
@@ -119,18 +120,24 @@ end
 service = BuildKiteService.new(org_name: ENV['ORG_NAME'], api_token: ENV['API_TOKEN'])
 
 my_builds = service.all_user_builds.map { |b| parse_build(b) }
-branches = ENV['BRANCHES'].split(';')
-branch_builds = service.branch_builds(branch: branches.length > 1 ? branches : branches.first)
-                       .map { |b| parse_build(b) }
-                       .group_by { |b| b['branch'] }
+branch_config = JSON.parse(ENV['BRANCHES'])
+branch_builds = branch_config.each_with_object({}) do |(pipeline, branch_string), acc|
+  branches = branch_string.split(';')
+  acc[pipeline] = service.branch_builds(pipeline: pipeline, branch: branches.length > 1 ? branches : branches.first)
+         .map { |b| parse_build(b) }
+         .group_by { |b| b['branch'] }
+end
 
 puts to_header_string(my_builds.first)
 puts '---'
 my_builds[0, ENV['BUILD_COUNT'].to_i].each { |b| puts(to_menu_string(b)) }
-puts '---'
-branch_builds.each do |(branch_name, builds)|
-  puts branch_name
-  builds[0, ENV['BUILD_COUNT'].to_i].each do |b|
-    puts "-- #{to_menu_string(b)}"
+branch_builds.each do |(pipeline, branches)|
+  puts '---'
+  puts pipeline
+  branches.each do |(branch_name, builds)|
+    puts branch_name
+    builds[0, ENV['BUILD_COUNT'].to_i].each do |b|
+      puts "-- #{to_menu_string(b)}"
+    end
   end
 end
