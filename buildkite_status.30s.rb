@@ -7,7 +7,7 @@
 # <bitbar.author.github>bringel</bitbar.author.github>
 # <bitbar.desc>Show the status of your most recent BuildKite builds</bitbar.desc>
 # <bitbar.dependencies>ruby</bitbar.dependencies>
-# <swiftbar.environment>[ORG_NAME:'default_org', API_TOKEN:'default_token', BRANCHES:'develop,main', BUILD_COUNT:5]</swiftbar.environment>
+# <swiftbar.environment>[ORG_NAME=default_org, API_TOKEN=default_token, BRANCHES=develop;main, BUILD_COUNT=5]</swiftbar.environment>
 
 require 'net/http'
 require 'json'
@@ -60,7 +60,6 @@ class BuildKiteService
   def request_headers
     {
       Authorization: "Bearer #{@api_token}",
-      Accept: 'application/json'
     }
   end
 end
@@ -73,16 +72,16 @@ def parse_build(build)
     'running' => 'arrow.triangle.2.circlepath',
     'passed' => 'checkmark.circle.fill',
     'failed' => 'xmark.octogon.fill',
-    'cancelled' => 'minus.circle.fill',
+    'canceled' => 'minus.circle.fill',
     'skipped' => 'forward.end.alt'
   }
 
   status_color_lookup = {
     'scheduled' => '#000000,#ffffff',
-    'running' => '#0969da',
-    'passed' => '#1a7f37',
-    'failed' => '#cf222e',
-    'cancelled' => '#bf8700',
+    'running' => '#0969da,#0969da',
+    'passed' => '#1a7f37,#1a7f37',
+    'failed' => '#cf222e,#cf222e',
+    'canceled' => '#bf8700,#bf8700',
     'skipped' => '#000000,#ffffff'
   }
 
@@ -94,18 +93,18 @@ end
 
 def to_header_string(build)
   [
-    build['message'][0, 30],
+    ":#{build['status_icon']}:",
+    "#{build['message'][0, 30].gsub(/\n+/, ' ')}...",
     '|',
-    "sfimage=#{build['status_icon']}",
     "sfcolor=#{build['status_color']}",
   ].join(' ')
 end
 
 def to_menu_string(build)
   [
-    build['message'],
+    ":#{build['status_icon']}:",
+    build['message'].gsub(/\n+/, ' '),
     '|',
-    "sfimage=#{build['status_icon']}",
     "sfcolor=#{build['status_color']}",
     "href=#{build['web_url']}"
   ].join(' ')
@@ -120,18 +119,18 @@ end
 service = BuildKiteService.new(org_name: ENV['ORG_NAME'], api_token: ENV['API_TOKEN'])
 
 my_builds = service.all_user_builds.map { |b| parse_build(b) }
-branches = ENV['BRANCHES'].split(',')
+branches = ENV['BRANCHES'].split(';')
 branch_builds = service.branch_builds(branch: branches.length > 1 ? branches : branches.first)
                        .map { |b| parse_build(b) }
                        .group_by { |b| b['branch'] }
 
 puts to_header_string(my_builds.first)
 puts '---'
-my_builds[0, ENV['BUILD_COUNT']].each { |b| puts(to_menu_string(b)) }
+my_builds[0, ENV['BUILD_COUNT'].to_i].each { |b| puts(to_menu_string(b)) }
 puts '---'
 branch_builds.each do |(branch_name, builds)|
   puts branch_name
-  builds[0, ENV['BUILD_COUNT']].each do |b|
+  builds[0, ENV['BUILD_COUNT'].to_i].each do |b|
     puts "-- #{to_menu_string(b)}"
   end
 end
