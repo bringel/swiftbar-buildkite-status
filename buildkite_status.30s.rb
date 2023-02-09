@@ -1,6 +1,14 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# <bitbar.title>BuildKite Status</bitbar.title>
+# <bitbar.version>0.1</bitbar.version>
+# <bitbar.author>Brad Ringel</bitbar.author>
+# <bitbar.author.github>bringel</bitbar.author.github>
+# <bitbar.desc>Show the status of your most recent BuildKite builds</bitbar.desc>
+# <bitbar.dependencies>ruby</bitbar.dependencies>
+# <swiftbar.environment>[ORG_NAME:'default_org', API_TOKEN:'default_token', BRANCHES:'develop,main', BUILD_COUNT:5]</swiftbar.environment>
+
 require 'net/http'
 require 'json'
 
@@ -119,11 +127,11 @@ branch_builds = service.branch_builds(branch: branches.length > 1 ? branches : b
 
 puts to_header_string(my_builds.first)
 puts '---'
-my_builds[0, 5].each { |b| puts(to_menu_string(b)) }
+my_builds[0, ENV['BUILD_COUNT']].each { |b| puts(to_menu_string(b)) }
 puts '---'
 branch_builds.each do |(branch_name, builds)|
   puts branch_name
-  builds[0, 5].each do |b|
+  builds[0, ENV['BUILD_COUNT']].each do |b|
     puts "-- #{to_menu_string(b)}"
   end
 end
