@@ -58,7 +58,7 @@ class BuildKiteService
 end
 
 def parse_build(build)
-  build_data = build.slice('id', 'web_url', 'url', 'number', 'state', 'message', 'created_at', 'finished_at')
+  build_data = build.slice('id', 'web_url', 'url', 'number', 'state', 'message', 'branch', 'created_at', 'finished_at')
 
   status_icon_lookup = {
     'scheduled' => 'clock.fill',
@@ -67,10 +67,15 @@ def parse_build(build)
     'failed' => 'xmark.octogon.fill',
     'cancelled' => 'minus.circle.fill',
     'skipped' => 'forward.end.alt'
-  }  
+  }
 
   status_color_lookup = {
-
+    'scheduled' => '#000000,#ffffff',
+    'running' => '#0969da',
+    'passed' => '#1a7f37',
+    'failed' => '#cf222e',
+    'cancelled' => '#bf8700',
+    'skipped' => '#000000,#ffffff'
   }
 
   build_data.merge(
@@ -108,8 +113,17 @@ service = BuildKiteService.new(org_name: ENV['ORG_NAME'], api_token: ENV['API_TO
 
 my_builds = service.all_user_builds.map { |b| parse_build(b) }
 branches = ENV['BRANCHES'].split(',')
-branch_builds = service.branch_builds(branch: branches.length > 1 ? branches : branches.first).map { |b| parse_build(b) }
+branch_builds = service.branch_builds(branch: branches.length > 1 ? branches : branches.first)
+                       .map { |b| parse_build(b) }
+                       .group_by { |b| b['branch'] }
 
 puts to_header_string(my_builds.first)
 puts '---'
 my_builds[0, 5].each { |b| puts(to_menu_string(b)) }
+puts '---'
+branch_builds.each do |(branch_name, builds)|
+  puts branch_name
+  builds[0, 5].each do |b|
+    puts "-- #{to_menu_string(b)}"
+  end
+end
