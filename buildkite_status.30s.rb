@@ -7,7 +7,7 @@
 # <bitbar.author.github>bringel</bitbar.author.github>
 # <bitbar.desc>Show the status of your most recent BuildKite builds</bitbar.desc>
 # <bitbar.dependencies>ruby</bitbar.dependencies>
-# <swiftbar.environment>[ORG_NAME=default_org, API_TOKEN=default_token, BRANCHES={ "your_repo_name": ["develop", "main"] }, BUILD_COUNT=5]</swiftbar.environment>
+# <swiftbar.environment>[ORG_NAME=default_org, API_TOKEN=default_token, BRANCHES={ "your_repo_name": "develop;main" }, BUILD_COUNT=5]</swiftbar.environment>
 
 require 'net/http'
 require 'json'
