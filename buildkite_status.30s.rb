@@ -72,7 +72,7 @@ def parse_build(build)
     'scheduled' => 'clock.fill',
     'running' => 'arrow.triangle.2.circlepath',
     'passed' => 'checkmark.circle.fill',
-    'failed' => 'xmark.octogon.fill',
+    'failed' => 'xmark.octagon.fill',
     'canceled' => 'minus.circle.fill',
     'skipped' => 'forward.end.alt'
   }
